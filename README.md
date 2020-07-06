@@ -7,7 +7,7 @@
 - 构建脚本
 
 ```go
-./build.sh  
+go get github.com/anthony-dong/template-generator/cmd/build
 ```
 
 - 查看命令
@@ -36,10 +36,7 @@ bin/go-build -dir=/data/tmp -mod=city-demo -git=git@gihub.com:Anthony-Dong/templ
 ### 下载：
 
 ```go
-go get -u github.com/anthony-dong/orm-generator/cmd/orm
-
-或者 down下目录执行
-./build.sh
+go get github.com/anthony-dong/template-generator/cmd/orm
 ```
 
 ### 快速开始
