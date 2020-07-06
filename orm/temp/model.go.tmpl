@@ -1,0 +1,20 @@
+package {{.PackageName}}
+
+{{if .HasTimeFiled}}
+import (
+	"time"
+)
+{{end}}
+
+/**
+{{.GetCreateSql}}
+*/
+
+type {{.ModelName}} struct {
+    {{range .Fields}}
+    {{.GetGoField}} {{.GetGoType}} {{if .GetTag}}{{.GetTag}}{{end}}{{end}}
+}
+
+func (*{{.ModelName}}) TableName() string {
+	return "{{.TableName}}"
+}
