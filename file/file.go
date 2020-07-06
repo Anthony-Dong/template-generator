@@ -14,14 +14,13 @@ func GetFilfAbsPath(fileName string) (string, error) {
 	return filepath.Abs(fileName)
 }
 
-
 func WriteFile(saveFilePath string, body []byte) error {
 	dir := filepath.Dir(saveFilePath)
 	e := mkdir(dir)
 	if e != nil {
 		return e
 	}
-	file, err := os.OpenFile(saveFilePath, os.O_CREATE|os.O_WRONLY, os.ModePerm)
+	file, err := os.OpenFile(saveFilePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm)
 	if err != nil {
 		return err
 	}
