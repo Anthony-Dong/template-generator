@@ -130,7 +130,7 @@ func (*{{.ModelName}}) TableName() string {
 var Dto=`
 type {{Upper .TableName}}Dto struct {
     {{range .TableField}}
-	{{.GetGoField}} {{.GetGoDaoType}} {{.GetDtoTag}} //{{.ColumnComment}}{{end}}
+	{{.GetGoField}} {{.GetGoDaoType}} {{.GetDtoTag}} {{if .ColumnComment}}//{{.ColumnComment}}{{end}}{{end}}
 }
 
 `

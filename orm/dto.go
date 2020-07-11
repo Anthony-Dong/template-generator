@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"go/format"
+	"sync"
 	"text/template"
 )
 
@@ -17,6 +18,7 @@ type DtoMeta struct {
 }
 
 type DtoMetas struct {
+	sync.Mutex
 	packageName string
 	dtos        []DtoMeta
 }
@@ -32,6 +34,8 @@ func NewDtoMeta(packageName string) *DtoMetas {
 }
 
 func (this *DtoMetas) Append(meta *ModelMeta) {
+	this.Lock()
+	defer this.Unlock()
 	dtoMeta := DtoMeta{
 		TableName:  meta.TableName,
 		TableField: meta.Fields,

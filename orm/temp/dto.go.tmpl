@@ -1,6 +1,6 @@
 package dto
 
-type {{Upper .TableName}}Dao struct {
+type {{Upper .TableName}}Dto struct {
     {{range .TableField}}
-	{{.GetGoField}} {{.GetGoDaoType}} `json:"{{.Name}}"` \\{{.ColumnComment}}{{end}}
+	{{.GetGoField}} {{.GetGoDaoType}} {{.GetDtoTag}} {{if .ColumnComment}}//{{.ColumnComment}}{{end}}{{end}}
 }

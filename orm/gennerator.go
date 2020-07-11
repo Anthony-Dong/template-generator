@@ -66,15 +66,7 @@ func (config *Config) Generator() error {
 	}
 	config.SaveFile = dir
 	logger.InfoF("save path: %s", dir)
-	if config.ModelPackageName == "" {
-		config.ModelPackageName = defaultModelName
-	}
-	if config.DaoPackageName == "" {
-		config.DaoPackageName = defaultDaoName
-	}
-	if config.DtoPackageName == "" {
-		config.DtoPackageName = defaultDtoPackageName
-	}
+	config.initPackage()
 
 	err = config.initDb()
 	if err != nil {
@@ -111,20 +103,23 @@ func (config *Config) Generator() error {
 		}(config, tableName, dtoMetas)
 	}
 	config.wg.Wait()
-
-	if dtoMetas == nil {
-		return nil
-	}
-	dtoFile := getSaveFileName(config.SaveFile, config.DtoPackageName, getDtoFileName(config.DbName))
-	bytes, err := dtoMetas.Run(config.dtoTemplate)
-	if err != nil {
-		return err
-	}
-	err = file.WriteFile(dtoFile, bytes)
+	err = config.saveDtoFile(dtoMetas)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (config *Config) initPackage() {
+	if config.ModelPackageName == "" {
+		config.ModelPackageName = defaultModelName
+	}
+	if config.DaoPackageName == "" {
+		config.DaoPackageName = defaultDaoName
+	}
+	if config.DtoPackageName == "" {
+		config.DtoPackageName = defaultDtoPackageName
+	}
 }
 
 func mysql(config *Config, tableName string, dtoMetas *DtoMetas) error {
@@ -140,10 +135,8 @@ func mysql(config *Config, tableName string, dtoMetas *DtoMetas) error {
 			return err
 		}
 		logger.InfoF("save %s model success, path=%s", tableName, saveFilePath)
-		if config.GeneratorDto {
-			if dtoMetas != nil {
-				dtoMetas.Append(model)
-			}
+		if config.GeneratorDto && dtoMetas != nil {
+			dtoMetas.Append(model)
 		}
 	}
 	if config.GeneratorDao {
@@ -163,6 +156,26 @@ func mysql(config *Config, tableName string, dtoMetas *DtoMetas) error {
 		}
 		logger.InfoF("save %s dao success, path= %s", tableName, saveFilePath)
 	}
+	return nil
+}
+
+/**
+dto file 坚持一个文件一个db
+ */
+func (config *Config) saveDtoFile(dtoMetas *DtoMetas) error {
+	if (!config.GeneratorDto) || dtoMetas == nil {
+		return nil
+	}
+	dtoFile := getSaveFileName(config.SaveFile, config.DtoPackageName, getDtoFileName(config.DbName))
+	bytes, err := dtoMetas.Run(config.dtoTemplate)
+	if err != nil {
+		return err
+	}
+	err = file.WriteFile(dtoFile, bytes)
+	if err != nil {
+		return err
+	}
+	logger.InfoF("save %s dto success, path= %s", config.DbName, dtoFile)
 	return nil
 }
 
