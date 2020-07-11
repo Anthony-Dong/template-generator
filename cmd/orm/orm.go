@@ -85,6 +85,7 @@ func initProperties() *orm.Config {
 	config.DbCharset = dbCharset
 	config.GeneratorModel = true
 	config.GeneratorDao = true
+	config.GeneratorDto = true
 	config.DaoPackageName = daoPackageName
 	config.ModelPackageName = modelPackageName
 	config.DtoPackageName = dtoPackageName
