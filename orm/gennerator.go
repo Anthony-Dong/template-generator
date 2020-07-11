@@ -5,6 +5,7 @@ import (
 	"github.com/anthony-dong/template-generator/file"
 	"github.com/anthony-dong/template-generator/logger"
 	"github.com/anthony-dong/template-generator/orm/temp"
+	"github.com/anthony-dong/template-generator/utils"
 	"github.com/go-xorm/xorm"
 	"path/filepath"
 	"text/template"
@@ -25,6 +26,16 @@ func (config *Config) initTemplate() error {
 		}
 		config.daoTemplate = parse
 	}
+	{
+		parse, err := template.New(dtoTemplateName).Funcs(map[string]interface{}{
+			"Upper": utils.Marshal,
+		}).Parse(temp.Dto)
+		if err != nil {
+			return err
+		}
+		config.dtoTemplate = parse
+	}
+
 	return nil
 }
 
@@ -61,6 +72,9 @@ func (config *Config) Generator() error {
 	if config.DaoPackageName == "" {
 		config.DaoPackageName = defaultDaoName
 	}
+	if config.DtoPackageName == "" {
+		config.DtoPackageName = defaultDtoPackageName
+	}
 
 	err = config.initDb()
 	if err != nil {
@@ -70,9 +84,13 @@ func (config *Config) Generator() error {
 	if err != nil {
 		return err
 	}
+	var dtoMetas *DtoMetas
+	if config.GeneratorDto {
+		dtoMetas = NewDtoMeta(config.DtoPackageName)
+	}
 	for _, tableName := range config.TableNames {
 		config.wg.Add(1)
-		go func(config *Config, tableName string) {
+		go func(config *Config, tableName string, dtoMetas *DtoMetas) {
 			defer func() {
 				if err := recover(); err != nil {
 					logger.FatalF("generate err: %v", err)
@@ -82,7 +100,7 @@ func (config *Config) Generator() error {
 			switch config.DbType {
 			case Mysql:
 				func() {
-					err := mysql(config, tableName)
+					err := mysql(config, tableName, dtoMetas)
 					if err != nil {
 						logger.FatalF("generate err: %v", err)
 					}
@@ -90,15 +108,29 @@ func (config *Config) Generator() error {
 			default:
 				logger.FatalF("not support %s db type", config.DbType)
 			}
-		}(config, tableName)
+		}(config, tableName, dtoMetas)
 	}
 	config.wg.Wait()
+
+	if dtoMetas == nil {
+		return nil
+	}
+	dtoFile := getSaveFileName(config.SaveFile, config.DtoPackageName, getDtoFileName(config.DbName))
+	bytes, err := dtoMetas.Run(config.dtoTemplate)
+	if err != nil {
+		return err
+	}
+	err = file.WriteFile(dtoFile, bytes)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func mysql(config *Config, tableName string) error {
+func mysql(config *Config, tableName string, dtoMetas *DtoMetas) error {
 	if config.GeneratorModel {
-		modelBody, err := NewModelMeta(config.DbName, tableName, config.ModelPackageName, config.engine, config.Tags).Run(config.modelTemplate)
+		model := NewModelMeta(config.DbName, tableName, config.ModelPackageName, config.engine, config.Tags)
+		modelBody, err := model.Run(config.modelTemplate)
 		if err != nil {
 			return err
 		}
@@ -108,6 +140,11 @@ func mysql(config *Config, tableName string) error {
 			return err
 		}
 		logger.InfoF("save %s model success, path=%s", tableName, saveFilePath)
+		if config.GeneratorDto {
+			if dtoMetas != nil {
+				dtoMetas.Append(model)
+			}
+		}
 	}
 	if config.GeneratorDao {
 		dao := DaoMeta{
@@ -131,6 +168,10 @@ func mysql(config *Config, tableName string) error {
 
 func getDaoFileName(tableName string) string {
 	return fmt.Sprintf("%s_dao", tableName)
+}
+
+func getDtoFileName(dbName string) string {
+	return fmt.Sprintf("%s_dto", dbName)
 }
 
 func getSaveFileName(dir, packageName, fileName string) string {

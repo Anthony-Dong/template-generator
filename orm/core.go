@@ -20,6 +20,7 @@ const (
 // template name
 const (
 	daoTemplateName   = "daoTemplateName"
+	dtoTemplateName   = "dtoTemplateName"
 	modelTemplateName = "modelTemplateName"
 )
 
@@ -41,6 +42,7 @@ type Config struct {
 	wg            sync.WaitGroup
 	daoTemplate   *template.Template
 	modelTemplate *template.Template
+	dtoTemplate   *template.Template
 
 	// db
 	DbType     DbType
@@ -63,8 +65,10 @@ type Config struct {
 	// template
 	GeneratorModel   bool
 	GeneratorDao     bool
+	GeneratorDto     bool
 	DaoPackageName   string
 	ModelPackageName string
+	DtoPackageName   string
 	Tags             []string
 }
 

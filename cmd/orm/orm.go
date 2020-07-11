@@ -20,6 +20,7 @@ var (
 	destDir          string
 	modelPackageName string
 	daoPackageName   string
+	dtoPackageName   string
 	tableNames       strFlags
 	dbType           string
 	tags             strFlags
@@ -57,6 +58,7 @@ func init() {
 	flag.StringVar(&destDir, "dir", "./tmp", "generated directory default ./tmp, eg: -dir=./tmp")
 	flag.StringVar(&modelPackageName, "model_package", "model", "package name default model, eg:-model_package=model")
 	flag.StringVar(&daoPackageName, "dao_package", "dao", "package name default dao, eg:-dao_package=dao")
+	flag.StringVar(&dtoPackageName, "dto_package", "dto", "package name default dao, eg:-dto_package=dao")
 }
 
 func main() {
@@ -85,6 +87,7 @@ func initProperties() *orm.Config {
 	config.GeneratorDao = true
 	config.DaoPackageName = daoPackageName
 	config.ModelPackageName = modelPackageName
+	config.DtoPackageName = dtoPackageName
 	config.Tags = addTag(tags)
 	config.SaveFile = destDir
 	return config
@@ -95,7 +98,7 @@ func initFlag() {
 	flag.Parse()
 	if help {
 		fmt.Println(`generator version: anthony/1.0.0
-Usage: generator -d=xorm -host=localhost -port=3306 -u=root -p=123456 -t=class -t=student -tag=xorm -dir=./tmp
+Usage: generator -host=localhost -port=3306 -d=urban_v -u=root -p=123456 -t=class -t=student -tag=xorm -dir=./tmp
 Option:`)
 		flag.PrintDefaults()
 		os.Exit(successExit)

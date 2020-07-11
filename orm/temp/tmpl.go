@@ -126,3 +126,11 @@ func (*{{.ModelName}}) TableName() string {
 	return "{{.TableName}}"
 }
 `
+
+var Dto=`
+type {{Upper .TableName}}Dto struct {
+    {{range .TableField}}
+	{{.GetGoField}} {{.GetGoDaoType}} {{.GetDtoTag}} //{{.ColumnComment}}{{end}}
+}
+
+`

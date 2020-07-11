@@ -1,0 +1,6 @@
+package dto
+
+type {{Upper .TableName}}Dao struct {
+    {{range .TableField}}
+	{{.GetGoField}} {{.GetGoDaoType}} `json:"{{.Name}}"` \\{{.ColumnComment}}{{end}}
+}

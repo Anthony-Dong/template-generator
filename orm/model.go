@@ -18,7 +18,7 @@ const (
 
 const (
 	specifiedTableNamesSql = `select table_name from information_schema.tables where table_schema = ? and table_name in ('%s') and table_type = 'base table';`
-	tableColumnsSql        = `select column_name,
+	tableColumnsSql        = `select column_name,column_comment,
 is_nullable, if(column_type = 'tinyint(1)', 'boolean', data_type) as file_type
 from information_schema.columns
 where table_schema = ? and  table_name = ?
@@ -27,10 +27,15 @@ order by ordinal_position;
 )
 
 type FieldMeta struct {
-	Name       string
-	FieldType  string
-	IsNullable string //OK  YES
-	Tags       []string
+	Name          string
+	FieldType     string
+	IsNullable    string //OK  YES
+	ColumnComment string // 字段描述信息
+	Tags          []string
+}
+
+func (this *FieldMeta) GetDtoTag() string {
+	return fmt.Sprintf("`json:\"%s\"`", this.Name)
 }
 
 func (this *FieldMeta) GetTag() string {
@@ -71,6 +76,34 @@ func (this *FieldMeta) GetGoField() string {
 	return utils.Marshal(this.Name)
 }
 
+func (this *FieldMeta) GetGoDaoType() string {
+	switch this.FieldType {
+	case "bit", "tinyint", "boolean":
+		return "uint8"
+	case "smallint", "year":
+		return "uint16"
+	case "integer", "mediumint", "int":
+		return "int"
+	case "bigint":
+		return "uint64"
+	case "date", "timestamp without time zone", "timestamp with time zone", "time with time zone", "time without time zone",
+		"timestamp", "datetime", "time":
+		return "int64" // 时间全部是int64
+	case "byte",
+		"binary", "varbinary", "tinyblob", "blob", "mediumblob", "longblob":
+		return "[]byte"
+	case "text", "character", "character varying", "tsvector", "bit varying", "money", "json", "jsonb", "xml", "point", "interval", "line", "ARRAY",
+		"char", "varchar", "tinytext", "mediumtext", "longtext":
+		return "string"
+	case "real":
+		return "float32"
+	case "numeric", "decimal", "double precision", "float", "double":
+		return "float64"
+	default:
+		return "string"
+	}
+}
+
 func (this *FieldMeta) GetGoType() string {
 	switch this.FieldType {
 	case "bit", "tinyint", "boolean":
@@ -100,12 +133,13 @@ func (this *FieldMeta) GetGoType() string {
 }
 
 type ModelMeta struct {
-	DbName      string
-	TableName   string
-	PackageName string
-	Fields      []FieldMeta
-	Db          *xorm.Engine
-	Tags        []string
+	DbName          string
+	TableName       string
+	PackageName     string
+	Fields          []FieldMeta
+	Db              *xorm.Engine
+	Tags            []string
+	hasGetFieldInfo bool
 }
 
 func NewModelMeta(dbName string, tableName string, packageName string, db *xorm.Engine, tags []string) *ModelMeta {
@@ -139,6 +173,9 @@ func (this *ModelMeta) Run(template *template.Template) ([]byte, error) {
 }
 
 func (this *ModelMeta) FindField() error {
+	if this.hasGetFieldInfo {
+		return nil
+	}
 	queryString, err := this.Db.SQL(tableColumnsSql, this.DbName, this.TableName).QueryString()
 	if err != nil {
 		return err
@@ -146,13 +183,15 @@ func (this *ModelMeta) FindField() error {
 	metas := make([]FieldMeta, 0, len(queryString))
 	for _, elem := range queryString {
 		metas = append(metas, FieldMeta{
-			Name:       elem["column_name"],
-			FieldType:  elem["file_type"],
-			IsNullable: elem["is_nullable"],
-			Tags:       this.Tags,
+			Name:          elem["column_name"],
+			FieldType:     elem["file_type"],
+			IsNullable:    elem["is_nullable"],
+			ColumnComment: elem["column_comment"],
+			Tags:          this.Tags,
 		})
 	}
 	this.Fields = metas
+	this.hasGetFieldInfo = true
 	return nil
 }
 
