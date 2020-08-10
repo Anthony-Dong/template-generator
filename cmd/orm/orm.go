@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/anthony-dong/template-generator/logger"
@@ -15,6 +16,11 @@ const (
 )
 
 var (
+	config *DBConfig = new(DBConfig)
+)
+
+var (
+	configFile       string
 	help             bool
 	showVersion      bool
 	destDir          string
@@ -55,6 +61,7 @@ func init() {
 	flag.Var(&tableNames, "t", "database table names default all tables , eg: -t=class -t=user")
 	flag.StringVar(&dbCharset, "charset", "utf8", "database table names, eg: -charset=utf8")
 	flag.Var(&tags, "tag", "modle tag names support add many tags,default xorm, eg: -tag=xorm -tag=json")
+	flag.StringVar(&configFile, "config", "", "orm config file, the shell instrument is priority than config file")
 	flag.StringVar(&destDir, "dir", "./tmp", "generated directory default ./tmp, eg: -dir=./tmp")
 	flag.StringVar(&modelPackageName, "model_package", "model", "package name default model, eg:-model_package=model")
 	flag.StringVar(&daoPackageName, "dao_package", "dao", "package name default dao, eg:-dao_package=dao")
@@ -62,8 +69,12 @@ func init() {
 }
 
 func main() {
+	initConfig("go-orm-config.json", true)
 	// 解析输入
 	initFlag()
+	if configFile != "" {
+		initConfig(configFile, false)
+	}
 	// 初始化属性
 	config := initProperties()
 	err := config.Generator()
@@ -71,6 +82,27 @@ func main() {
 		logger.FatalF("generate fail,err=%s", err)
 	}
 	fmt.Println("generate template finished")
+}
+
+// 是否忽略error
+func initConfig(fileName string, fail bool) {
+	file, err := os.Open(fileName)
+	if err != nil {
+		if fail {
+			return
+		}
+		logger.FatalF("not fond config-file", err)
+	}
+	err = json.NewDecoder(file).Decode(config)
+	if err != nil {
+		bytes, _ := json.Marshal(config)
+		logger.InfoF(`
+your config should be as follow:
+%s
+`, bytes)
+		logger.FatalF("decode config-file err,err=%s", err)
+	}
+	reloadConfig()
 }
 
 // 初始化属性
@@ -91,6 +123,7 @@ func initProperties() *orm.Config {
 	config.DtoPackageName = dtoPackageName
 	config.Tags = addTag(tags)
 	config.SaveFile = destDir
+	config.TableNames = tableNames
 	return config
 }
 
@@ -122,4 +155,26 @@ func addTag(tags strFlags) []string {
 		result = append(result, e)
 	}
 	return result
+}
+
+func reloadConfig() {
+	dbType = config.DbType
+	tags = config.Tags
+	dbName = config.DbName
+	dbHost = config.DbHost
+	dbPort = config.DbPort
+	dbUserName = config.DbUserName
+	dbPassword = config.DbPassword
+	dbCharset = config.DbCharset
+}
+
+type DBConfig struct {
+	DbType     string   `json:"db_type"`
+	Tags       strFlags `json:"tags"`
+	DbName     string   `json:"db_name"`
+	DbHost     string   `json:"db_host"`
+	DbPort     int      `json:"db_port"`
+	DbUserName string   `json:"db_user_name"`
+	DbPassword string   `json:"db_password"`
+	DbCharset  string   `json:"db_charset"`
 }

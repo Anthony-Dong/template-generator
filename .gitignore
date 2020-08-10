@@ -12,3 +12,5 @@ tmp/
 bin/
 demo/
 *test.go
+.DS_Store
+*.json

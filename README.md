@@ -7,6 +7,7 @@
 - 支持生成xorm的model对象
 - 支持生成dao对象
 - 支持生成dto对象（time.Time 转化成 int64时间搓）
+- 支持外部配置文件，防止重复输入配置文件，默认配置文件在 `go-orm-config.json`，这个优先级低于 命令，如果你命令传入-config，显示申明配置文件，那么它的优先级最高。
 
 需要支持Go mod ，所以版本最好1.11以上
 
@@ -19,6 +20,23 @@ go get -u github.com/anthony-dong/template-generator/cmd/orm
 ### 快速开始
 
 > ​	以xxl_job的表 为例子
+
+配置文件如下:
+
+```json
+{
+  "db_type": "mysql",
+  "tags": [
+    "xorm"
+  ],
+  "db_name": "tests",
+  "db_host": "localhost",
+  "db_port": 3306,
+  "db_user_name": "root",
+  "db_password": "12345",
+  "db_charset": "utf8"
+}
+```
 
 ```go
 ~/go/code/framework/tempalte-generator (master*) % bin/go-orm -d=xxl_job  -host=localhost  -port=3306  -u=root -p=123456  -dir=/data/tmp
