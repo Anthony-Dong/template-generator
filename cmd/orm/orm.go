@@ -4,10 +4,13 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+
 	"github.com/anthony-dong/template-generator/logger"
 	"github.com/anthony-dong/template-generator/orm"
-	"os"
-	"strings"
 )
 
 const (
@@ -69,11 +72,11 @@ func init() {
 }
 
 func main() {
-	initConfig("go-orm-config.json", true)
+	initConfig("go-orm-config.json", true, false)
 	// 解析输入
 	initFlag()
 	if configFile != "" {
-		initConfig(configFile, false)
+		initConfig(configFile, false, true)
 	}
 	// 初始化属性
 	config := initProperties()
@@ -84,9 +87,26 @@ func main() {
 	fmt.Println("generate template finished")
 }
 
+func GetRootPath() string {
+	curFilename := os.Args[0]
+	binaryPath, err := exec.LookPath(curFilename)
+	if err != nil {
+		panic(err)
+	}
+	binaryPath, err = filepath.Abs(binaryPath)
+	if err != nil {
+		panic(err)
+	}
+	return filepath.Dir(binaryPath)
+}
+
 // 是否忽略error
-func initConfig(fileName string, fail bool) {
+func initConfig(fileName string, fail, asb bool) {
+	if !asb {
+		fileName = filepath.Clean(fmt.Sprintf("%s/%s", GetRootPath(), fileName))
+	}
 	file, err := os.Open(fileName)
+	fmt.Println(fmt.Sprintf("load config %s", fileName))
 	if err != nil {
 		if fail {
 			return

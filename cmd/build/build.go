@@ -3,22 +3,25 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/anthony-dong/template-generator/file"
-	"github.com/anthony-dong/template-generator/scrpit"
 	"os"
 	"path/filepath"
+
+	"github.com/anthony-dong/template-generator/file"
+	"github.com/anthony-dong/template-generator/scrpit"
 )
 
 var (
 	gitRemoteAddress string
+	branch           string
 	cloneDir         string
 	modelName        string
 	helps            bool
 )
 
 func init() {
-	flag.StringVar(&modelName, "mod", "", "go mod name, eg:-mod=ebike-city-report")
-	flag.StringVar(&gitRemoteAddress, "git", "", "git branch, eg:-git=git@gitee.com:Anthony-Dong/template.git")
+	flag.StringVar(&modelName, "mod", "", "go mod name, eg:-mod=report")
+	flag.StringVar(&gitRemoteAddress, "git", "", "git addr, eg:-git=git@gitee.com:Anthony-Dong/template.git")
+	flag.StringVar(&branch, "branch", "master", "git branch, eg:-branch=master")
 	flag.StringVar(&cloneDir, "dir", "./", "go , eg:-dir=/data/temp")
 	flag.BoolVar(&helps, "h", false, "this help")
 }
@@ -34,9 +37,14 @@ func main() {
 		panic(e)
 	}
 	fmt.Printf("git clone %s to %s\n", gitRemoteAddress, dir)
-	// clone
-	scrpit.Git(gitRemoteAddress, dir)
-	fmt.Printf("git clone %s success", gitRemoteAddress)
+
+	if branch == "master" {
+		scrpit.Git(gitRemoteAddress, dir)
+	} else {
+		scrpit.GitBranch(branch, gitRemoteAddress, dir)
+	}
+
+	fmt.Printf("git clone -b %s %s %s success", branch, gitRemoteAddress, dir)
 	// rename
 	e = file.NewTemplate(dir, modelName)
 	if e != nil {

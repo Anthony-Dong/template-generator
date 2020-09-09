@@ -15,6 +15,11 @@ func Git(str, dir string) {
 	Cmd(gitCmd)
 }
 
+func GitBranch(branch, str, dir string) {
+	gitCmd := fmt.Sprintf("git clone -b %s %s  %s", branch, str, dir)
+	Cmd(gitCmd)
+}
+
 func Run(shell string) {
 	gitCmd := fmt.Sprintf("%s", shell)
 	Cmd(gitCmd)
